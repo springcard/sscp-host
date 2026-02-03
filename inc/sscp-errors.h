@@ -35,7 +35,8 @@
 #define SSCP_ERR_UNSUPPORTED_RESPONSE_VALUE -31  /* Application error: wrong value in response */
 #define SSCP_ERR_UNSUPPORTED_RESPONSE_LENGTH -32 /* Application error: response length is incorrect */
 
-#define SSCP_ERR_NFC_CARD_MUTE_OR_REMOVED -40 /* Card error: timeout */
-#define SSCP_ERR_NFC_CARD_COMM_ERROR -41 /* Card error: communication error */
+#define SSCP_ERR_NFC_CARD_ABSENT -40 /* Card error: no card */
+#define SSCP_ERR_NFC_CARD_MUTE_OR_REMOVED -41 /* Card error: timeout */
+#define SSCP_ERR_NFC_CARD_COMM_ERROR -42 /* Card error: communication error */
 
 #endif

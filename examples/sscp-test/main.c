@@ -4,7 +4,7 @@
 
 #include <sscp-host.h>
 
-extern BOOL SSCP_DEBUG_SERIAL;
+extern BOOL SSCP_DEBUG_EXCHANGE;
 
 void showStatistics(SSCP_CTX_ST* ctx)
 {
@@ -27,7 +27,7 @@ int main(int argc, char** argv)
 #ifdef _WIN32
 	const char* sscpSerialPortName = "COM8";	
 #else
-	const char* sscpSerialPortName = "/dev/ttyUSB0";	
+	const char* sscpSerialPortName = "/dev/ttyUSB0";
 #endif
 	SSCP_CTX_ST* ctx;
 	LONG rc;
@@ -56,6 +56,8 @@ int main(int argc, char** argv)
 
 	SSCP_Free(ctx);
 
+	SSCP_DEBUG_EXCHANGE = TRUE;
+
 	ctx = SSCP_Alloc();
 	if (ctx == NULL)
 	{
@@ -75,7 +77,7 @@ int main(int argc, char** argv)
 	{
 		printf("SSCP_SetAddress(0x01) failed (err. %d)\n", rc);
 		goto sscp_error;
-	}
+	}	
 
 	rc = SSCP_Authenticate(ctx, NULL);
 	if (rc)
@@ -84,13 +86,6 @@ int main(int argc, char** argv)
 		goto sscp_error;
 	}
 	printf("SSCP_Authenticate OK\n");
-
-	rc = SSCP_Outputs(ctx, 0x02, 0x0A, 0x02);
-	if (rc)
-	{
-		printf("SSCP_Outputs failed (err. %d)\n", rc);
-		goto sscp_error;
-	}
 
 	{
 		BYTE version;
@@ -128,7 +123,6 @@ int main(int argc, char** argv)
 		printf("SSCP_GetReaderType OK, readerType=%s\n", readerType);
 	}
 
-	for (;;)
 	{
 		WORD protocol;
 		BYTE uid[32];
@@ -137,6 +131,7 @@ int main(int argc, char** argv)
 		BYTE atsLen;
 
 		rc = SSCP_ScanNFC(ctx, &protocol, uid, sizeof(uid), &uidLen, ats, sizeof(ats), &atsLen);
+
 		if (rc)
 		{
 			printf("SSCP_ScanNFC failed (err. %d)\n", rc);
@@ -145,8 +140,8 @@ int main(int argc, char** argv)
 
 		if (protocol == 0)
 		{
-			/* No card found, keep on polling */
-			continue;
+			printf("SSCP_ScanNFC: no card found\n");
+			goto card_error;
 		}
 
 		printf("SSCP_ScanNFC OK, card present, protocol=%04X\n", protocol);
@@ -162,9 +157,6 @@ int main(int argc, char** argv)
 			printf("\n");
 		}
 
-		SSCP_Outputs(ctx, 0x01, 0x0A, 0x02);
-
-		for (;;)
 		{
 			BYTE commandApdu[256];
 			DWORD commandApduSz;
@@ -172,12 +164,10 @@ int main(int argc, char** argv)
 			DWORD responseApduSz;
 
 			commandApduSz = 0;
+			commandApdu[commandApduSz++] = 0x90;
+			commandApdu[commandApduSz++] = 0x60;
 			commandApdu[commandApduSz++] = 0x00;
-			commandApdu[commandApduSz++] = 0xA4;
-			commandApdu[commandApduSz++] = 0x04;
 			commandApdu[commandApduSz++] = 0x00;
-			commandApdu[commandApduSz++] = 0x02;
-			commandApdu[commandApduSz++] = 0x3F;
 			commandApdu[commandApduSz++] = 0x00;
 
 			printf("C-APDU=");
@@ -186,6 +176,7 @@ int main(int argc, char** argv)
 			printf("\n");
 
 			rc = SSCP_TransceiveNFC(ctx, commandApdu, commandApduSz, responseApdu, sizeof(responseApdu), &responseApduSz);
+
 			if (rc)
 			{
 				switch (rc)
@@ -207,7 +198,7 @@ int main(int argc, char** argv)
 			if (responseApduSz == 0)
 			{
 				/* Card mute, card removed, or card communication error */
-				break;
+				goto card_error;
 			}
 
 			printf("R-APDU=");
@@ -215,17 +206,9 @@ int main(int argc, char** argv)
 				printf("%02X", responseApdu[i]);
 			printf("\n");
 		}
-
-		SSCP_Outputs(ctx, 0x02, 0x0A, 0x02);
-		
-		rc = SSCP_ReleaseNFC(ctx);
-		if (rc)
-		{
-			printf("SSCP_ReleaseNFC failed (err. %d)\n", rc);
-			goto sscp_error;
-		}
 	}
 
+card_error:	
 	if (ctx != NULL)
 	{
 		SSCP_Close(ctx);

@@ -24,7 +24,7 @@ This library handles the framing and communication logic necessary to exchange A
 ### Build
 
 ```bash
-git clone https://github.com/your-org/sscp-host.git
+git clone https://github.com/springcard/sscp-host.git
 cd sscp-host
 mkdir build
 cd build

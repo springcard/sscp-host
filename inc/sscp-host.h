@@ -42,6 +42,8 @@ LONG SSCP_GetSerialNumber(SSCP_CTX_ST* ctx, char *serialNumber, BYTE maxSerialNu
 LONG SSCP_GetReaderType(SSCP_CTX_ST* ctx, char *readerType, BYTE maxReaderTypeSz);
 
 LONG SSCP_ScanNFC(SSCP_CTX_ST* ctx, WORD *protocol, BYTE uid[], BYTE maxUidSz, BYTE* actUidSz, BYTE ats[], BYTE maxAtsSz, BYTE* actAtsSz);
+LONG SSCP_ScanARaw(SSCP_CTX_ST* ctx, WORD *protocol, BYTE uid[], BYTE maxUidSz, BYTE* actUidSz, BYTE ats[], BYTE maxAtsSz, BYTE* actAtsSz);
+
 LONG SSCP_TransceiveNFC(SSCP_CTX_ST* ctx, const BYTE commandApdu[], DWORD commandApduSz, BYTE responseApdu[], DWORD maxResponseApduSz, DWORD *actResponseApduSz);
 LONG SSCP_ReleaseNFC(SSCP_CTX_ST* ctx);
 

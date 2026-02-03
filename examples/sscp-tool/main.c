@@ -38,29 +38,6 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	rc = SSCP_Authenticate_SelfTest(ctx, NULL);
-	if (rc)
-	{
-		printf("SSCP_Authenticate_SelfTest failed\n");
-		return -1;
-	}
-
-	rc = SSCP_Outputs_SelfTest(ctx, 0x02, 0x0A, 0x00);
-	if (rc)
-	{
-		printf("SSCP_Outputs_SelfTest failed\n");
-		return -1;
-	}
-
-	SSCP_Free(ctx);
-
-	ctx = SSCP_Alloc();
-	if (ctx == NULL)
-	{
-		printf("SSCP_Alloc failed\n");
-		return -1;
-	}
-
 	rc = SSCP_Open(ctx, sscpSerialPortName, 38400, 0);
 	if (rc)
 	{
@@ -135,6 +112,7 @@ int main(int argc, char** argv)
 		BYTE atsLen;
 
 		rc = SSCP_ScanNFC(ctx, &protocol, uid, sizeof(uid), &uidLen, ats, sizeof(ats), &atsLen);
+
 		if (rc)
 		{
 			printf("SSCP_ScanNFC failed (err. %d)\n", rc);
@@ -178,12 +156,32 @@ int main(int argc, char** argv)
 			commandApdu[commandApduSz++] = 0x3F;
 			commandApdu[commandApduSz++] = 0x00;
 
+			/*
+			commandApduSz = 0;
+			commandApdu[commandApduSz++] = 0x90;
+			commandApdu[commandApduSz++] = 0x5A;
+			commandApdu[commandApduSz++] = 0x00;
+			commandApdu[commandApduSz++] = 0x00;
+			commandApdu[commandApduSz++] = 0x03;
+			commandApdu[commandApduSz++] = 0x00;
+			commandApdu[commandApduSz++] = 0x00;
+			commandApdu[commandApduSz++] = 0x00;
+			commandApdu[commandApduSz++] = 0x00;
+
+			commandApduSz = 0;
+			commandApdu[commandApduSz++] = 0x60;
+			commandApdu[commandApduSz++] = 0x00;
+			commandApdu[commandApduSz++] = 0x00;
+			commandApdu[commandApduSz++] = 0x00;
+			*/
+
 			printf("C-APDU=");
 			for (i = 0; i < commandApduSz; i++)
 				printf("%02X", commandApdu[i]);
 			printf("\n");
 
 			rc = SSCP_TransceiveNFC(ctx, commandApdu, commandApduSz, responseApdu, sizeof(responseApdu), &responseApduSz);
+
 			if (rc)
 			{
 				switch (rc)
@@ -212,6 +210,8 @@ int main(int argc, char** argv)
 			for (i = 0; i < responseApduSz; i++)
 				printf("%02X", responseApdu[i]);
 			printf("\n");
+
+			break;
 		}
 
 		SSCP_Outputs(ctx, 0x02, 0x0A, 0x02);

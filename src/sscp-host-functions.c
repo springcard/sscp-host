@@ -496,6 +496,92 @@ LONG SSCP_ScanNFC(SSCP_CTX_ST* ctx, WORD* protocol, BYTE uid[], BYTE maxUidSz, B
 	return SSCP_SUCCESS;
 }
 
+LONG SSCP_ScanARaw(SSCP_CTX_ST* ctx, WORD *protocol, BYTE uid[], BYTE maxUidSz, BYTE* actUidSz, BYTE ats[], BYTE maxAtsSz, BYTE* actAtsSz)
+{
+	BYTE ats_spec[] = { 0x01 };
+	BYTE responseData[32] = { 0 };
+	DWORD responseDataSz = 0;
+	BYTE cardCount = 0;
+	LONG rc;
+	BYTE length;
+	DWORD offset = 0;
+
+	if (ctx == NULL)
+		return SSCP_ERR_INVALID_CONTEXT;
+
+	if (protocol == NULL)
+		return SSCP_ERR_INVALID_PARAMETER;
+	if ((uid != NULL) && (actUidSz == NULL))
+		return SSCP_ERR_INVALID_PARAMETER;
+	if ((ats != NULL) && (actAtsSz == NULL))
+		return SSCP_ERR_INVALID_PARAMETER;
+
+	*protocol = 0;
+	if (actUidSz != NULL)
+		*actUidSz = 0;
+	if (actAtsSz != NULL)
+		*actAtsSz = 0;
+
+	/* Make sure we don't call this function too often, because the reader is __slow__ */
+	SSCP_GuardTime(ctx, SSCP_SCAN_GLOBAL_GUARD_TIME);
+
+	/* Command is SCAN_A_RAW */
+	rc = SSCP_Exchange(ctx, SSCP_CMD_SCAN_A_RAW, ats_spec, sizeof(ats_spec), responseData, sizeof(responseData), &responseDataSz);
+	if (rc)
+		return rc;
+
+	if (responseDataSz < 1)
+		return SSCP_ERR_WRONG_RESPONSE_LENGTH;
+
+	cardCount = responseData[offset++];
+
+	switch (cardCount)
+	{
+		case 0x00 :
+			/* No tag */
+		break;
+
+		case 0x01 :
+			/* ISOA present */
+			*protocol = 0x0001;
+			if (responseDataSz < 5)
+				return SSCP_ERR_UNSUPPORTED_RESPONSE_LENGTH;
+			/* Skip ATQA and SAK */
+			offset += 3;
+			/* This is UIDLen */
+			length = responseData[offset++];
+			if (offset + length > responseDataSz)
+				return SSCP_ERR_UNSUPPORTED_RESPONSE_VALUE; /* Not a valid length */
+			if (actUidSz != NULL)
+				*actUidSz = length;
+			if (length > maxUidSz)
+				return SSCP_ERR_OUTPUT_BUFFER_OVERFLOW;
+			if (uid != NULL)
+				memcpy(uid, &responseData[offset], length);
+			offset += length;
+			if (offset < responseDataSz)
+			{
+				/* This is ATSLen */
+				length = responseData[offset]; /* ATSLen is part of the ATS itself, so no offset increment */
+				if (offset + length > responseDataSz)
+					return SSCP_ERR_UNSUPPORTED_RESPONSE_VALUE; /* Not a valid length */
+				if (actAtsSz != NULL)
+					*actAtsSz = length;
+				if (length > maxAtsSz)
+					return SSCP_ERR_OUTPUT_BUFFER_OVERFLOW;
+				if (ats != NULL)
+					memcpy(ats, &responseData[offset], length);
+				offset += length;
+			}
+		break;
+
+		default:
+			return SSCP_ERR_UNSUPPORTED_RESPONSE_STATUS;
+	}
+
+	return SSCP_SUCCESS;
+}
+
 LONG SSCP_TransceiveNFC(SSCP_CTX_ST* ctx, const BYTE commandApdu[], DWORD commandApduSz, BYTE responseApdu[], DWORD maxResponseApduSz, DWORD* actResponseApduSz)
 {
 	BYTE responseData[256] = { 0 };
@@ -511,6 +597,7 @@ LONG SSCP_TransceiveNFC(SSCP_CTX_ST* ctx, const BYTE commandApdu[], DWORD comman
 
 	/* Command is TRANSCEIVE APDU */
 	rc = SSCP_Exchange(ctx, SSCP_CMD_TRANSCEIVE_APDU, commandApdu, commandApduSz, responseData, sizeof(responseData), &responseDataSz);
+
 	if (rc)
 		return rc;
 

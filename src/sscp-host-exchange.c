@@ -163,7 +163,7 @@ static LONG SSCP_ExchangeEx(SSCP_CTX_ST* ctx, DWORD commandHeader, const BYTE co
     if (commandDataSz > 4096)
         return SSCP_ERR_COMMAND_TOO_LONG;
 
-    maxCommandSz = 4 + 1 + 2 + 2 + commandDataSz + 32 + 16 + 16; /* 16 for padding + 16 for IV */
+    maxCommandSz = 4 + 1 + 2 + 2 + 1 + commandDataSz + 32 + 16 + 16; /* 16 for padding + 16 for IV */
 
     /* Allocated the two buffers */
     command = calloc(1, maxCommandSz);
@@ -184,8 +184,9 @@ static LONG SSCP_ExchangeEx(SSCP_CTX_ST* ctx, DWORD commandHeader, const BYTE co
     command[commandSz++] = commandType;
     command[commandSz++] = (BYTE)(commandCode >> 8);
     command[commandSz++] = (BYTE)(commandCode);
-    command[commandSz++] = (BYTE)(commandDataSz >> 8);
-    command[commandSz++] = (BYTE)(commandDataSz);
+    command[commandSz++] = (BYTE)((commandDataSz + 1) >> 8);
+    command[commandSz++] = (BYTE)((commandDataSz + 1));
+    command[commandSz++] = 0x00; /* Reserved */
     if (commandData != NULL)
     {
         memcpy(&command[commandSz], commandData, commandDataSz);
@@ -451,6 +452,14 @@ static LONG SSCP_ExchangeEx(SSCP_CTX_ST* ctx, DWORD commandHeader, const BYTE co
 
     /* Remember the status code */
     responseCode = response[responseSz - 1];
+
+    if (SSCP_DEBUG_EXCHANGE)
+    {
+        SSCP_Trace("Response=");
+        for (i = 0; i < t; i++)
+            SSCP_Trace("%02X", response[8 + i]);
+        SSCP_Trace("\n");
+    }
 
     /* Remember the length */
     if (actResponseDataSz != NULL)
