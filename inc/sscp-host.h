@@ -1,3 +1,23 @@
+/**
+ * @file sscp-host.h
+ * @brief Public SSCP host-side API.
+ *
+ * This header exposes the public API used by a host application
+ * (control panel) to communicate with an SSCP-compatible reader.
+ *
+ * The API allows the host to:
+ * - Create and manage an SSCP context
+ * - Open and close a communication channel
+ * - Authenticate with the reader
+ * - Configure reader parameters (address, baudrate, keys, etc.)
+ * - Perform reader operations (LEDs, buzzer, NFC scan, APDU exchange)
+ *
+ * Transport-specific details (RS-485, USB, TCP/IP, etc.) are abstracted
+ * behind the SSCP context and lower-level backends.
+ *
+ * @note This header is intended for application developers.
+ *       Internal structures and helper functions are deliberately not exposed.
+ */
 #ifndef __SSCP_HOST_H__
 #define __SSCP_HOST_H__
 
@@ -32,14 +52,17 @@ void SSCP_Free(SSCP_CTX_ST* ctx);
 
 LONG SSCP_Open(SSCP_CTX_ST* ctx, const char* commName, DWORD commBaudrate, DWORD commFlags);
 LONG SSCP_Close(SSCP_CTX_ST* ctx);
-
-LONG SSCP_SetAddress(SSCP_CTX_ST* ctx, BYTE address);
+LONG SSCP_SelectAddress(SSCP_CTX_ST* ctx, BYTE address);
+LONG SSCP_SelectBaudrate(SSCP_CTX_ST* ctx, DWORD baudrate);
 
 LONG SSCP_Authenticate(SSCP_CTX_ST* ctx, const BYTE authKeyValue[16]);
 LONG SSCP_Outputs(SSCP_CTX_ST* ctx, BYTE ledColor, BYTE ledDuration, BYTE buzzerDuration);
 LONG SSCP_GetInfos(SSCP_CTX_ST* ctx, BYTE* version, BYTE* baudrate, BYTE* address, WORD* voltage);
 LONG SSCP_GetSerialNumber(SSCP_CTX_ST* ctx, char *serialNumber, BYTE maxSerialNumberSz);
 LONG SSCP_GetReaderType(SSCP_CTX_ST* ctx, char *readerType, BYTE maxReaderTypeSz);
+
+LONG SSCP_SetAddress(SSCP_CTX_ST* ctx, BYTE address);
+LONG SSCP_SetBaudrate(SSCP_CTX_ST* ctx, DWORD baudrate);
 
 LONG SSCP_ScanNFC(SSCP_CTX_ST* ctx, WORD *protocol, BYTE uid[], BYTE maxUidSz, BYTE* actUidSz, BYTE ats[], BYTE maxAtsSz, BYTE* actAtsSz);
 LONG SSCP_ScanARaw(SSCP_CTX_ST* ctx, WORD *protocol, BYTE uid[], BYTE maxUidSz, BYTE* actUidSz, BYTE ats[], BYTE maxAtsSz, BYTE* actAtsSz);
@@ -59,9 +82,6 @@ typedef struct
 } SSCP_STATISTICS_ST;
 
 LONG SSCP_GetStatistics(SSCP_CTX_ST* ctx, SSCP_STATISTICS_ST *stats);
-
-LONG SSCP_Authenticate_SelfTest(SSCP_CTX_ST* ctx, const BYTE authKeyValue[16]);
-LONG SSCP_Outputs_SelfTest(SSCP_CTX_ST* ctx, BYTE ledColor, BYTE ledDuration, BYTE buzzerDuration);
 
 #include <sscp-consts.h>
 #include <sscp-errors.h>

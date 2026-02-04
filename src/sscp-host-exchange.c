@@ -140,7 +140,7 @@ LONG SSCP_ExchangeRaw(SSCP_CTX_ST* ctx, BYTE address, BYTE protocol, const BYTE 
     return SSCP_SUCCESS;
 }
 
-static LONG SSCP_ExchangeEx(SSCP_CTX_ST* ctx, DWORD commandHeader, const BYTE commandData[], DWORD commandDataSz, BYTE responseData[], DWORD maxResponseDataSz, DWORD *actResponseDataSz, BOOL selftest)
+LONG SSCP_Exchange(SSCP_CTX_ST* ctx, DWORD commandHeader, const BYTE commandData[], DWORD commandDataSz, BYTE responseData[], DWORD maxResponseDataSz, DWORD* actResponseDataSz)
 {
     BYTE padding[16] = { 0 };
     BYTE initVector[16] = { 0 };
@@ -163,7 +163,7 @@ static LONG SSCP_ExchangeEx(SSCP_CTX_ST* ctx, DWORD commandHeader, const BYTE co
     if (commandDataSz > 4096)
         return SSCP_ERR_COMMAND_TOO_LONG;
 
-    maxCommandSz = 4 + 1 + 2 + 2 + 1 + commandDataSz + 32 + 16 + 16; /* 16 for padding + 16 for IV */
+    maxCommandSz = 4 + 1 + 2 + 2 + commandDataSz + 32 + 16 + 16; /* 16 for padding + 16 for IV */
 
     /* Allocated the two buffers */
     command = calloc(1, maxCommandSz);
@@ -184,9 +184,8 @@ static LONG SSCP_ExchangeEx(SSCP_CTX_ST* ctx, DWORD commandHeader, const BYTE co
     command[commandSz++] = commandType;
     command[commandSz++] = (BYTE)(commandCode >> 8);
     command[commandSz++] = (BYTE)(commandCode);
-    command[commandSz++] = (BYTE)((commandDataSz + 1) >> 8);
-    command[commandSz++] = (BYTE)((commandDataSz + 1));
-    command[commandSz++] = 0x00; /* Reserved */
+    command[commandSz++] = (BYTE)(commandDataSz >> 8);
+    command[commandSz++] = (BYTE)(commandDataSz);
     if (commandData != NULL)
     {
         memcpy(&command[commandSz], commandData, commandDataSz);
@@ -197,7 +196,18 @@ static LONG SSCP_ExchangeEx(SSCP_CTX_ST* ctx, DWORD commandHeader, const BYTE co
     {
         SSCP_Trace("Command=");
         for (i = 0; i < commandSz; i++)
+        {
+            switch (i)
+            {
+                case 4:
+                case 5:
+                case 7:
+                case 9:
+                    SSCP_Trace(" ");
+                break;
+            }
             SSCP_Trace("%02X", command[i]);
+        }
         SSCP_Trace("\n");
     }
 
@@ -219,7 +229,7 @@ static LONG SSCP_ExchangeEx(SSCP_CTX_ST* ctx, DWORD commandHeader, const BYTE co
     commandSz += 32;
 
     /* Padd the command to reach a multiple of 16 bytes */
-    if (selftest)
+    if (SSCP_SELFTEST)
     {
         static const BYTE PADD[4] = { 0xBA, 0x40, 0x5E, 0xDD };
         i = 0;
@@ -243,7 +253,7 @@ static LONG SSCP_ExchangeEx(SSCP_CTX_ST* ctx, DWORD commandHeader, const BYTE co
         SSCP_Trace("\n");
     }
 
-    if (selftest)
+    if (SSCP_SELFTEST)
     {
         static const BYTE IV[16] = { 0x7C, 0x3D, 0xE3, 0xF3, 0xE1, 0x91, 0xD3, 0xCD, 0x3A, 0x09, 0x3E, 0x64, 0x3B, 0xF0, 0x35, 0xCE };
         memcpy(initVector, IV, 16);
@@ -286,7 +296,7 @@ static LONG SSCP_ExchangeEx(SSCP_CTX_ST* ctx, DWORD commandHeader, const BYTE co
     }
 
 
-    if (selftest)
+    if (SSCP_SELFTEST)
     {
         static const BYTE R[] = {
             0xEE, 0x3F, 0x77, 0x22, 0x6E, 0x77, 0xEF, 0xF3, 0x05, 0x89, 0xBB, 0x40, 0xF1, 0xA1, 0x7C, 0x8E,
@@ -502,29 +512,19 @@ failed:
     return rc;
 }
 
-LONG SSCP_Exchange(SSCP_CTX_ST* ctx, DWORD commandHeader, const BYTE commandData[], DWORD commandDataSz, BYTE responseData[], DWORD maxResponseDataSz, DWORD* actResponseDataSz)
-{
-    return SSCP_ExchangeEx(ctx, commandHeader, commandData, commandDataSz, responseData, maxResponseDataSz, actResponseDataSz, FALSE);
-}
-
-LONG SSCP_Exchange_SelfTest(SSCP_CTX_ST* ctx, DWORD commandHeader, const BYTE commandData[], DWORD commandDataSz, BYTE responseData[], DWORD maxResponseDataSz, DWORD* actResponseDataSz)
-{
-    return SSCP_ExchangeEx(ctx, commandHeader, commandData, commandDataSz, responseData, maxResponseDataSz, actResponseDataSz, TRUE);
-}
-
 LONG SSCP_Exchange_NoDataIn(SSCP_CTX_ST* ctx, DWORD commandHeader, BYTE responseData[], DWORD maxResponseDataSz, DWORD* actResponseDataSz)
 {
-    return SSCP_ExchangeEx(ctx, commandHeader, NULL, 0, responseData, maxResponseDataSz, actResponseDataSz, FALSE);
+    return SSCP_Exchange(ctx, commandHeader, NULL, 0, responseData, maxResponseDataSz, actResponseDataSz);
 }
 
 LONG SSCP_Exchange_NoDataOut(SSCP_CTX_ST* ctx, DWORD commandHeader, const BYTE commandData[], DWORD commandDataSz)
 {
-    return SSCP_ExchangeEx(ctx, commandHeader, commandData, commandDataSz, NULL, 0, NULL, FALSE);
+    return SSCP_Exchange(ctx, commandHeader, commandData, commandDataSz, NULL, 0, NULL);
 }
 
 LONG SSCP_Exchange_NoDataInOut(SSCP_CTX_ST* ctx, DWORD commandHeader)
 {
-    return SSCP_ExchangeEx(ctx, commandHeader, NULL, 0, NULL, 0, NULL, FALSE);
+    return SSCP_Exchange(ctx, commandHeader, NULL, 0, NULL, 0, NULL);
 }
 
 

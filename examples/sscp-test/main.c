@@ -4,7 +4,9 @@
 
 #include <sscp-host.h>
 
+extern BOOL SSCP_SELFTEST;
 extern BOOL SSCP_DEBUG_EXCHANGE;
+extern BOOL SSCP_DEBUG_AUTHENTICATE;
 
 void showStatistics(SSCP_CTX_ST* ctx)
 {
@@ -33,30 +35,36 @@ int main(int argc, char** argv)
 	LONG rc;
 	DWORD i;
 
+	SSCP_SELFTEST = TRUE;	
+	SSCP_DEBUG_EXCHANGE = TRUE;
+	SSCP_DEBUG_AUTHENTICATE = TRUE;
+
 	ctx = SSCP_Alloc();
 	if (ctx == NULL)
 	{
 		printf("SSCP_Alloc failed\n");
 		return -1;
 	}
-
-	rc = SSCP_Authenticate_SelfTest(ctx, NULL);
+	
+	rc = SSCP_Authenticate(ctx, NULL);
 	if (rc)
 	{
-		printf("SSCP_Authenticate_SelfTest failed\n");
+		printf("SSCP_Authenticate (SelfTest) failed\n");
 		return -1;
 	}
 
-	rc = SSCP_Outputs_SelfTest(ctx, 0x02, 0x0A, 0x00);
+	rc = SSCP_Outputs(ctx, 0x02, 0x0A, 0x00);
 	if (rc)
 	{
-		printf("SSCP_Outputs_SelfTest failed\n");
+		printf("SSCP_Outputs (SelfTest) failed\n");
 		return -1;
 	}
+
+	printf("SelfTest OK\n");
+
+	SSCP_SELFTEST = FALSE;
 
 	SSCP_Free(ctx);
-
-	SSCP_DEBUG_EXCHANGE = TRUE;
 
 	ctx = SSCP_Alloc();
 	if (ctx == NULL)
@@ -72,10 +80,10 @@ int main(int argc, char** argv)
 		goto sscp_error;
 	}
 
-	rc = SSCP_SetAddress(ctx, 0x01); /* RS485 */
+	rc = SSCP_SelectAddress(ctx, 0x01); /* RS485 */
 	if (rc)
 	{
-		printf("SSCP_SetAddress(0x01) failed (err. %d)\n", rc);
+		printf("SSCP_SelectAddress(0x01) failed (err. %d)\n", rc);
 		goto sscp_error;
 	}	
 

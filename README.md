@@ -32,6 +32,15 @@ cmake ..
 make
 ```
 
+Windows: if you're using Visual Studio's C++ compiler, use:
+
+```bash
+mkdir build
+cd build
+cmake .. -G "Visual Studio 17 2022"
+cmake --build . --config Release
+```
+
 Alternatively, you can include the source files in your own project.
 
 ## Documentation

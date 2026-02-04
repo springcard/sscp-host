@@ -1,3 +1,21 @@
+/**
+ * @file sscp-errors.h
+ * @brief SSCP error codes definitions.
+ *
+ * This header defines the error codes returned by the SSCP host-side API.
+ * Error values are of type LONG and follow a common convention:
+ * - SSCP_SUCCESS indicates success
+ * - Negative values indicate errors
+ *
+ * Error codes may originate from:
+ * - Parameter validation
+ * - Transport or communication failures
+ * - Protocol-level errors reported by the reader
+ * - Local host-side state or context errors
+ *
+ * @note Not all error codes imply a protocol fault. Some errors are detected
+ *       locally before any communication with the reader occurs.
+ */
 #ifndef __SSCP_ERRORS_H__
 #define __SSCP_ERRORS_H__
 

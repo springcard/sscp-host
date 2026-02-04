@@ -47,8 +47,6 @@ LONG SSCP_Exchange_NoDataIn(SSCP_CTX_ST* ctx, DWORD commandHeader, BYTE response
 LONG SSCP_Exchange_NoDataOut(SSCP_CTX_ST* ctx, DWORD commandHeader, const BYTE commandData[], DWORD commandDataSz);
 LONG SSCP_Exchange_NoDataInOut(SSCP_CTX_ST* ctx, DWORD commandHeader);
 
-LONG SSCP_Exchange_SelfTest(SSCP_CTX_ST* ctx, DWORD commandHeader, const BYTE commandData[], DWORD commandDataSz, BYTE responseData[], DWORD maxResponseDataSz, DWORD* actResponseDataSz);
-
 BOOL SSCP_HMAC(const BYTE keyValue[16], const BYTE buffer[], DWORD length, BYTE hmac[32]);
 BOOL SSCP_Cipher(const BYTE keyValue[16], const BYTE initVector[16], BYTE buffer[], DWORD length);
 BOOL SSCP_Decipher(const BYTE keyValue[16], const BYTE initVector[16], BYTE buffer[], DWORD length);
@@ -71,5 +69,10 @@ BOOL SSCP_GetRandom(BYTE buffer[], DWORD bufferSz);
 
 #include "sscp-host-crypto_i.h"
 #include "sscp-host-serial_i.h"
+
+extern BOOL SSCP_DEBUG_AUTHENTICATE;
+extern BOOL SSCP_DEBUG_EXCHANGE;
+
+extern BOOL SSCP_SELFTEST;
 
 #endif
