@@ -131,6 +131,8 @@ int main(int argc, char** argv)
 		printf("SSCP_GetReaderType OK, readerType=%s\n", readerType);
 	}
 
+	SSCP_OutputsRGB(ctx, 0x2244FF, 0xFF, 0);
+
 	{
 		WORD protocol;
 		BYTE uid[32];

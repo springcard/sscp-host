@@ -420,7 +420,7 @@ LONG SSCP_ChangeKey(SSCP_CTX_ST* ctx, const BYTE newKey[16])
 }
 
 /**
- * @brief Control the reader outputs (bi-colour LED and buzzer).
+ * @brief Control the reader main outputs (bi-colour LED and buzzer).
  *
  * This issues the SSCP "OutPuts" command (00h 07h) to set LED colour and to
  * activate LED and buzzer for the specified durations.
@@ -449,6 +449,76 @@ LONG SSCP_Outputs(SSCP_CTX_ST* ctx, BYTE ledColor, BYTE ledDuration, BYTE buzzer
 	data[2] = buzzerDuration;
 
 	rc = SSCP_Exchange(ctx, SSCP_CMD_OUTPUTS, data, sizeof(data), NULL, 0, NULL);
+
+	return rc;
+}
+
+/**
+ * @brief Advanced control of the reader main outputs (tri-colour LED and buzzer).
+ *
+ * This issues the SSCP "OutputRGB" command (00h 50h) to set LED colour and to
+ * activate LED and buzzer for the specified durations.
+ *
+ * @param[in,out] ctx SSCP context.
+ * @param[in] ledColor RGB LED colour selector.
+ * @param[in] ledDuration LED duration in multiples of 100 ms.
+ *   0xFF keeps the LED on indefinitely (until reset or another command).
+ * @param[in] buzzerDuration Buzzer duration in multiples of 100 ms.
+ *   0xFF keeps the buzzer on indefinitely (until reset or another command).
+ *
+ * @return SSCP_SUCCESS on success, otherwise an SSCP_ERR_* code.
+ *
+ * @note This command is outside the SPAC SSCPv2 Standard. Not all readers support it.
+ * 
+ */
+LONG SSCP_OutputsRGB(SSCP_CTX_ST* ctx, DWORD ledColor, BYTE ledDuration, BYTE buzzerDuration)
+{
+	BYTE data[6];
+	LONG rc;
+
+	data[0] = 0x80; /* Activate expert mode */
+	data[1] = (BYTE) (ledColor >> 16);
+	data[2] = (BYTE) (ledColor >> 8);
+	data[3] = (BYTE) (ledColor >> 0);
+	data[4] = ledDuration;
+	data[5] = buzzerDuration;
+
+	rc = SSCP_Exchange(ctx, SSCP_CMD_OUTPUT_RGB, data, sizeof(data), NULL, 0, NULL);
+
+	return rc;
+}
+
+/**
+ * @brief Control the reader external full-colour LED ramp.
+ *
+ * This issues the SSCP "ExternalLEDColors" command (00h 5Ah) to set LED colour.
+ *
+ * @param[in,out] ctx SSCP context.
+ * @param[in] param1 Value of RGB components (R in MSB and B in LSB)
+ * @param[in] param2 Value of RGB components (R in MSB and B in LSB)
+ * @param[in] param3 Value of RGB components (R in MSB and B in LSB)s.
+ *
+ * @return SSCP_SUCCESS on success, otherwise an SSCP_ERR_* code.
+ *
+ * @note Not all readers support this command.
+ * 
+ */
+LONG SSCP_ExternalLEDRGB(SSCP_CTX_ST* ctx, DWORD param1, DWORD param2, DWORD param3)
+{
+	BYTE data[9];
+	LONG rc;
+
+	data[0] = (BYTE) (param1 >> 16);
+	data[1] = (BYTE) (param1 >> 8);
+	data[2] = (BYTE) (param1 >> 0);
+	data[3] = (BYTE) (param2 >> 16);
+	data[4] = (BYTE) (param2 >> 8);
+	data[5] = (BYTE) (param2 >> 0);
+	data[6] = (BYTE) (param3 >> 16);
+	data[7] = (BYTE) (param3 >> 8);
+	data[8] = (BYTE) (param3 >> 0);
+
+	rc = SSCP_Exchange(ctx, SSCP_CMD_EXTERNAL_LED_COLORS, data, sizeof(data), NULL, 0, NULL);
 
 	return rc;
 }
