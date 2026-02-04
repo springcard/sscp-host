@@ -58,7 +58,7 @@ LONG SSCP_SelectBaudrate(SSCP_CTX_ST* ctx, DWORD baudrate);
 LONG SSCP_Authenticate(SSCP_CTX_ST* ctx, const BYTE authKeyValue[16]);
 LONG SSCP_Outputs(SSCP_CTX_ST* ctx, BYTE ledColor, BYTE ledDuration, BYTE buzzerDuration);
 LONG SSCP_OutputsRGB(SSCP_CTX_ST* ctx, DWORD ledColor, BYTE ledDuration, BYTE buzzerDuration);
-LONG SSCP_ExternalLEDColors(SSCP_CTX_ST* ctx, DWORD param1, DWORD param2, DWORD param3);
+LONG SSCP_ExternalLEDRGB(SSCP_CTX_ST* ctx, DWORD param1, DWORD param2, DWORD param3);
 LONG SSCP_GetInfos(SSCP_CTX_ST* ctx, BYTE* version, BYTE* baudrate, BYTE* address, WORD* voltage);
 LONG SSCP_GetSerialNumber(SSCP_CTX_ST* ctx, char *serialNumber, BYTE maxSerialNumberSz);
 LONG SSCP_GetReaderType(SSCP_CTX_ST* ctx, char *readerType, BYTE maxReaderTypeSz);
