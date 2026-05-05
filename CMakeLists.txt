@@ -30,5 +30,9 @@ add_executable(sscp-test examples/sscp-test/main.c)
 target_link_libraries(sscp-test ${LIBRARY_NAME} ${OPENSSL_LIB})
 
 # Example: sscp-tool
-add_executable(sscp-tool examples/sscp-tool/main.c)
+add_executable(sscp-tool
+    examples/sscp-tool/main.c
+    examples/sscp-tool/params.c
+    examples/sscp-tool/project.h
+)
 target_link_libraries(sscp-tool ${LIBRARY_NAME} ${OPENSSL_LIB})

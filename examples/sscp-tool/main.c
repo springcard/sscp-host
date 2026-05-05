@@ -1,8 +1,6 @@
 #include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 
-#include <sscp-host.h>
+#include "project.h"
 
 void showStatistics(SSCP_CTX_ST* ctx)
 {
@@ -22,14 +20,18 @@ void showStatistics(SSCP_CTX_ST* ctx)
 
 int main(int argc, char** argv)
 {
-#ifdef _WIN32
-	const char* sscpSerialPortName = "COM8";	
-#else
-	const char* sscpSerialPortName = "/dev/ttyUSB0";
-#endif
+	SSCP_TOOL_PARAMS_ST params;
 	SSCP_CTX_ST* ctx;
 	LONG rc;
 	DWORD i;
+	int parseRc;
+
+	SSCP_ToolInitParams(&params);
+	parseRc = SSCP_ToolParseParams(argc, argv, &params);
+	if (parseRc == SSCP_TOOL_PARSE_HELP)
+		return 0;
+	if (parseRc != SSCP_TOOL_PARSE_OK)
+		return -1;
 
 	ctx = SSCP_Alloc();
 	if (ctx == NULL)
@@ -38,7 +40,7 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	rc = SSCP_Open(ctx, sscpSerialPortName, 38400, 0);
+	rc = SSCP_Open(ctx, params.serialPortName, params.serialBitrate, 0);
 	if (rc)
 	{
 		printf("SSCP_Open failed (err. %d)\n", rc);
@@ -244,4 +246,3 @@ sscp_error:
 	}
 	return -1;
 }
-
