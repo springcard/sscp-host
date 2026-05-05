@@ -93,9 +93,11 @@ static int getopt(int argc, char* const argv[], const char* optstring)
 
 void SSCP_ToolShowUsage(const char* programName)
 {
-	fprintf(stderr, "Usage: %s [-p serial_port] [-b bitrate]\n", programName);
+	fprintf(stderr, "Usage: %s [-p serial_port] [-b bitrate] [-a address] [-k auth_key]\n", programName);
 	fprintf(stderr, "  -p serial_port  Serial port name (default: COM8 on Windows, /dev/ttyUSB0 otherwise)\n");
 	fprintf(stderr, "  -b bitrate      Connection bitrate: 9600, 38400, or 115200 (default: 38400)\n");
+	fprintf(stderr, "  -a address      Reader address in hexadecimal, from 0x00 to 0x7F (default: 0x01)\n");
+	fprintf(stderr, "  -k auth_key     Authentication key as 16 hexadecimal bytes, optionally prefixed with 0x\n");
 	fprintf(stderr, "  -h              Show this help\n");
 }
 
@@ -110,6 +112,9 @@ void SSCP_ToolInitParams(SSCP_TOOL_PARAMS_ST* params)
 	params->serialPortName = "/dev/ttyUSB0";
 #endif
 	params->serialBitrate = 38400;
+	params->readerAddress = 0x01;
+	memset(params->authKey, 0, sizeof(params->authKey));
+	params->hasAuthKey = FALSE;
 }
 
 static int parseBitrate(const char* value, DWORD* bitrate)
@@ -138,6 +143,70 @@ static int parseBitrate(const char* value, DWORD* bitrate)
 	}
 }
 
+static int hexNibble(char value)
+{
+	if ((value >= '0') && (value <= '9'))
+		return value - '0';
+	if ((value >= 'a') && (value <= 'f'))
+		return value - 'a' + 10;
+	if ((value >= 'A') && (value <= 'F'))
+		return value - 'A' + 10;
+	return -1;
+}
+
+static const char* skipHexPrefix(const char* value)
+{
+	if ((value != NULL) && (value[0] == '0') && ((value[1] == 'x') || (value[1] == 'X')))
+		return value + 2;
+
+	return value;
+}
+
+static int parseReaderAddress(const char* value, BYTE* out)
+{
+	char* end;
+	unsigned long parsed;
+
+	if ((value == NULL) || (*value == '\0') || (out == NULL))
+		return -1;
+
+	errno = 0;
+	parsed = strtoul(value, &end, 16);
+	if ((errno != 0) || (*end != '\0') || (parsed > 0x7F))
+		return -1;
+
+	*out = (BYTE) parsed;
+	return 0;
+}
+
+static int parseAuthKey(const char* value, BYTE authKey[16])
+{
+	const char* hex;
+	size_t hexLen;
+	size_t i;
+
+	if ((value == NULL) || (authKey == NULL))
+		return -1;
+
+	hex = skipHexPrefix(value);
+	hexLen = strlen(hex);
+	if (hexLen != 32)
+		return -1;
+
+	for (i = 0; i < 16; i++)
+	{
+		int high = hexNibble(hex[i * 2]);
+		int low = hexNibble(hex[(i * 2) + 1]);
+
+		if ((high < 0) || (low < 0))
+			return -1;
+
+		authKey[i] = (BYTE) ((high << 4) | low);
+	}
+
+	return 0;
+}
+
 int SSCP_ToolParseParams(int argc, char** argv, SSCP_TOOL_PARAMS_ST* params)
 {
 	int opt;
@@ -146,7 +215,11 @@ int SSCP_ToolParseParams(int argc, char** argv, SSCP_TOOL_PARAMS_ST* params)
 		return SSCP_TOOL_PARSE_ERROR;
 
 	opterr = 0;
-	while ((opt = getopt(argc, argv, "p:b:h")) != -1)
+	optind = 1;
+	optarg = NULL;
+	optopt = 0;
+
+	while ((opt = getopt(argc, argv, "p:b:a:k:h")) != -1)
 	{
 		switch (opt)
 		{
@@ -169,13 +242,32 @@ int SSCP_ToolParseParams(int argc, char** argv, SSCP_TOOL_PARAMS_ST* params)
 				}
 				break;
 
+			case 'a':
+				if (parseReaderAddress(optarg, &params->readerAddress) != 0)
+				{
+					fprintf(stderr, "Invalid reader address '%s'\n", optarg);
+					SSCP_ToolShowUsage(argv[0]);
+					return SSCP_TOOL_PARSE_ERROR;
+				}
+				break;
+
+			case 'k':
+				if (parseAuthKey(optarg, params->authKey) != 0)
+				{
+					fprintf(stderr, "Invalid authentication key\n");
+					SSCP_ToolShowUsage(argv[0]);
+					return SSCP_TOOL_PARSE_ERROR;
+				}
+				params->hasAuthKey = TRUE;
+				break;
+
 			case 'h':
 				SSCP_ToolShowUsage(argv[0]);
 				return SSCP_TOOL_PARSE_HELP;
 
 			case '?':
 			default:
-				if ((optopt == 'p') || (optopt == 'b'))
+				if ((optopt == 'p') || (optopt == 'b') || (optopt == 'a') || (optopt == 'k'))
 					fprintf(stderr, "Option '-%c' requires an argument\n", optopt);
 				else
 					fprintf(stderr, "Unknown option '-%c'\n", optopt);

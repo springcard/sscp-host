@@ -22,6 +22,9 @@ typedef struct
 {
 	const char* serialPortName;
 	DWORD serialBitrate;
+	BYTE readerAddress;
+	BYTE authKey[16];
+	BOOL hasAuthKey;
 } SSCP_TOOL_PARAMS_ST;
 
 /**

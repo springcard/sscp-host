@@ -47,14 +47,14 @@ int main(int argc, char** argv)
 		goto sscp_error;
 	}
 
-	rc = SSCP_SetAddress(ctx, 0x01); /* RS485 */
+	rc = SSCP_SelectAddress(ctx, params.readerAddress); /* RS485 */
 	if (rc)
 	{
-		printf("SSCP_SetAddress(0x01) failed (err. %d)\n", rc);
+		printf("SSCP_SelectAddress(0x%02X) failed (err. %d)\n", params.readerAddress, rc);
 		goto sscp_error;
 	}
 
-	rc = SSCP_Authenticate(ctx, NULL);
+	rc = SSCP_Authenticate(ctx, params.hasAuthKey ? params.authKey : NULL);
 	if (rc)
 	{
 		printf("SSCP_Authenticate failed (err. %d)\n", rc);
