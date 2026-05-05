@@ -12,6 +12,16 @@
 #define SSCP_TOOL_PARSE_HELP 1
 #define SSCP_TOOL_PARSE_ERROR (-1)
 
+typedef enum
+{
+	SSCP_TOOL_COMMAND_POLL = 0,
+	SSCP_TOOL_COMMAND_INFO,
+	SSCP_TOOL_COMMAND_OUTPUTS,
+	SSCP_TOOL_COMMAND_OUTPUTS_RGB,
+	SSCP_TOOL_COMMAND_SET_ADDRESS,
+	SSCP_TOOL_COMMAND_SET_KEY
+} SSCP_TOOL_COMMAND_EN;
+
 /**
  * Command-line configuration for the SSCP tool example.
  *
@@ -25,6 +35,13 @@ typedef struct
 	BYTE readerAddress;
 	BYTE authKey[16];
 	BOOL hasAuthKey;
+	SSCP_TOOL_COMMAND_EN command;
+	BYTE outputLedColor;
+	BYTE outputLedDuration;
+	BYTE outputBuzzerDuration;
+	DWORD outputRgbColor;
+	BYTE newReaderAddress;
+	BYTE newAuthKey[16];
 } SSCP_TOOL_PARAMS_ST;
 
 /**

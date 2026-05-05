@@ -93,12 +93,20 @@ static int getopt(int argc, char* const argv[], const char* optstring)
 
 void SSCP_ToolShowUsage(const char* programName)
 {
-	fprintf(stderr, "Usage: %s [-p serial_port] [-b bitrate] [-a address] [-k auth_key]\n", programName);
+	fprintf(stderr, "Usage: %s [connection options] [command]\n", programName);
+	fprintf(stderr, "Connection options:\n");
 	fprintf(stderr, "  -p serial_port  Serial port name (default: COM8 on Windows, /dev/ttyUSB0 otherwise)\n");
 	fprintf(stderr, "  -b bitrate      Connection bitrate: 9600, 38400, or 115200 (default: 38400)\n");
 	fprintf(stderr, "  -a address      Reader address in hexadecimal, from 0x00 to 0x7F (default: 0x01)\n");
 	fprintf(stderr, "  -k auth_key     Authentication key as 16 hexadecimal bytes, optionally prefixed with 0x\n");
+	fprintf(stderr, "Commands:\n");
+	fprintf(stderr, "  -I              Print reader information and exit\n");
+	fprintf(stderr, "  -U c d b        Call SSCP_Outputs(c, d, b) and exit\n");
+	fprintf(stderr, "  -R rgb d b      Call SSCP_OutputsRGB(rgb, d, b) and exit\n");
+	fprintf(stderr, "  -A address      Set the reader address and exit\n");
+	fprintf(stderr, "  -K new_key      Set the reader key and exit\n");
 	fprintf(stderr, "  -h              Show this help\n");
+	fprintf(stderr, "Output values accept decimal or 0x-prefixed hexadecimal input.\n");
 }
 
 void SSCP_ToolInitParams(SSCP_TOOL_PARAMS_ST* params)
@@ -115,6 +123,13 @@ void SSCP_ToolInitParams(SSCP_TOOL_PARAMS_ST* params)
 	params->readerAddress = 0x01;
 	memset(params->authKey, 0, sizeof(params->authKey));
 	params->hasAuthKey = FALSE;
+	params->command = SSCP_TOOL_COMMAND_POLL;
+	params->outputLedColor = 0;
+	params->outputLedDuration = 0;
+	params->outputBuzzerDuration = 0;
+	params->outputRgbColor = 0;
+	params->newReaderAddress = 0;
+	memset(params->newAuthKey, 0, sizeof(params->newAuthKey));
 }
 
 static int parseBitrate(const char* value, DWORD* bitrate)
@@ -179,6 +194,40 @@ static int parseReaderAddress(const char* value, BYTE* out)
 	return 0;
 }
 
+static int parseByteValue(const char* value, BYTE* out)
+{
+	char* end;
+	unsigned long parsed;
+
+	if ((value == NULL) || (*value == '\0') || (out == NULL))
+		return -1;
+
+	errno = 0;
+	parsed = strtoul(value, &end, 0);
+	if ((errno != 0) || (*end != '\0') || (parsed > 0xFF))
+		return -1;
+
+	*out = (BYTE) parsed;
+	return 0;
+}
+
+static int parseRgbValue(const char* value, DWORD* out)
+{
+	char* end;
+	unsigned long parsed;
+
+	if ((value == NULL) || (*value == '\0') || (out == NULL))
+		return -1;
+
+	errno = 0;
+	parsed = strtoul(value, &end, 0);
+	if ((errno != 0) || (*end != '\0') || (parsed > 0xFFFFFF))
+		return -1;
+
+	*out = (DWORD) parsed;
+	return 0;
+}
+
 static int parseAuthKey(const char* value, BYTE authKey[16])
 {
 	const char* hex;
@@ -207,6 +256,19 @@ static int parseAuthKey(const char* value, BYTE authKey[16])
 	return 0;
 }
 
+static int setCommand(SSCP_TOOL_PARAMS_ST* params, SSCP_TOOL_COMMAND_EN command, const char* programName)
+{
+	if (params->command != SSCP_TOOL_COMMAND_POLL)
+	{
+		fprintf(stderr, "Only one command option may be specified\n");
+		SSCP_ToolShowUsage(programName);
+		return SSCP_TOOL_PARSE_ERROR;
+	}
+
+	params->command = command;
+	return SSCP_TOOL_PARSE_OK;
+}
+
 int SSCP_ToolParseParams(int argc, char** argv, SSCP_TOOL_PARAMS_ST* params)
 {
 	int opt;
@@ -219,7 +281,7 @@ int SSCP_ToolParseParams(int argc, char** argv, SSCP_TOOL_PARAMS_ST* params)
 	optarg = NULL;
 	optopt = 0;
 
-	while ((opt = getopt(argc, argv, "p:b:a:k:h")) != -1)
+	while ((opt = getopt(argc, argv, "+p:b:a:k:IURA:K:h")) != -1)
 	{
 		switch (opt)
 		{
@@ -261,13 +323,100 @@ int SSCP_ToolParseParams(int argc, char** argv, SSCP_TOOL_PARAMS_ST* params)
 				params->hasAuthKey = TRUE;
 				break;
 
+			case 'I':
+				if (setCommand(params, SSCP_TOOL_COMMAND_INFO, argv[0]) != SSCP_TOOL_PARSE_OK)
+					return SSCP_TOOL_PARSE_ERROR;
+				break;
+
+			case 'U':
+				if (setCommand(params, SSCP_TOOL_COMMAND_OUTPUTS, argv[0]) != SSCP_TOOL_PARSE_OK)
+					return SSCP_TOOL_PARSE_ERROR;
+				if ((optind + 3) > argc)
+				{
+					fprintf(stderr, "Option '-U' requires 3 arguments\n");
+					SSCP_ToolShowUsage(argv[0]);
+					return SSCP_TOOL_PARSE_ERROR;
+				}
+				if (parseByteValue(argv[optind], &params->outputLedColor) != 0)
+				{
+					fprintf(stderr, "Invalid SSCP_Outputs LED color '%s'\n", argv[optind]);
+					SSCP_ToolShowUsage(argv[0]);
+					return SSCP_TOOL_PARSE_ERROR;
+				}
+				if (parseByteValue(argv[optind + 1], &params->outputLedDuration) != 0)
+				{
+					fprintf(stderr, "Invalid SSCP_Outputs LED duration '%s'\n", argv[optind + 1]);
+					SSCP_ToolShowUsage(argv[0]);
+					return SSCP_TOOL_PARSE_ERROR;
+				}
+				if (parseByteValue(argv[optind + 2], &params->outputBuzzerDuration) != 0)
+				{
+					fprintf(stderr, "Invalid SSCP_Outputs buzzer duration '%s'\n", argv[optind + 2]);
+					SSCP_ToolShowUsage(argv[0]);
+					return SSCP_TOOL_PARSE_ERROR;
+				}
+				optind += 3;
+				break;
+
+			case 'R':
+				if (setCommand(params, SSCP_TOOL_COMMAND_OUTPUTS_RGB, argv[0]) != SSCP_TOOL_PARSE_OK)
+					return SSCP_TOOL_PARSE_ERROR;
+				if ((optind + 3) > argc)
+				{
+					fprintf(stderr, "Option '-R' requires 3 arguments\n");
+					SSCP_ToolShowUsage(argv[0]);
+					return SSCP_TOOL_PARSE_ERROR;
+				}
+				if (parseRgbValue(argv[optind], &params->outputRgbColor) != 0)
+				{
+					fprintf(stderr, "Invalid SSCP_OutputsRGB color '%s'\n", argv[optind]);
+					SSCP_ToolShowUsage(argv[0]);
+					return SSCP_TOOL_PARSE_ERROR;
+				}
+				if (parseByteValue(argv[optind + 1], &params->outputLedDuration) != 0)
+				{
+					fprintf(stderr, "Invalid SSCP_OutputsRGB LED duration '%s'\n", argv[optind + 1]);
+					SSCP_ToolShowUsage(argv[0]);
+					return SSCP_TOOL_PARSE_ERROR;
+				}
+				if (parseByteValue(argv[optind + 2], &params->outputBuzzerDuration) != 0)
+				{
+					fprintf(stderr, "Invalid SSCP_OutputsRGB buzzer duration '%s'\n", argv[optind + 2]);
+					SSCP_ToolShowUsage(argv[0]);
+					return SSCP_TOOL_PARSE_ERROR;
+				}
+				optind += 3;
+				break;
+
+			case 'A':
+				if (setCommand(params, SSCP_TOOL_COMMAND_SET_ADDRESS, argv[0]) != SSCP_TOOL_PARSE_OK)
+					return SSCP_TOOL_PARSE_ERROR;
+				if (parseReaderAddress(optarg, &params->newReaderAddress) != 0)
+				{
+					fprintf(stderr, "Invalid new reader address '%s'\n", optarg);
+					SSCP_ToolShowUsage(argv[0]);
+					return SSCP_TOOL_PARSE_ERROR;
+				}
+				break;
+
+			case 'K':
+				if (setCommand(params, SSCP_TOOL_COMMAND_SET_KEY, argv[0]) != SSCP_TOOL_PARSE_OK)
+					return SSCP_TOOL_PARSE_ERROR;
+				if (parseAuthKey(optarg, params->newAuthKey) != 0)
+				{
+					fprintf(stderr, "Invalid new authentication key\n");
+					SSCP_ToolShowUsage(argv[0]);
+					return SSCP_TOOL_PARSE_ERROR;
+				}
+				break;
+
 			case 'h':
 				SSCP_ToolShowUsage(argv[0]);
 				return SSCP_TOOL_PARSE_HELP;
 
 			case '?':
 			default:
-				if ((optopt == 'p') || (optopt == 'b') || (optopt == 'a') || (optopt == 'k'))
+				if ((optopt == 'p') || (optopt == 'b') || (optopt == 'a') || (optopt == 'k') || (optopt == 'A') || (optopt == 'K'))
 					fprintf(stderr, "Option '-%c' requires an argument\n", optopt);
 				else
 					fprintf(stderr, "Unknown option '-%c'\n", optopt);

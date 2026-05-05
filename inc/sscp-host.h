@@ -65,6 +65,7 @@ LONG SSCP_GetReaderType(SSCP_CTX_ST* ctx, char *readerType, BYTE maxReaderTypeSz
 
 LONG SSCP_SetAddress(SSCP_CTX_ST* ctx, BYTE address);
 LONG SSCP_SetBaudrate(SSCP_CTX_ST* ctx, DWORD baudrate);
+LONG SSCP_ChangeKey(SSCP_CTX_ST* ctx, const BYTE newKey[16]);
 
 LONG SSCP_ScanNFC(SSCP_CTX_ST* ctx, WORD *protocol, BYTE uid[], BYTE maxUidSz, BYTE* actUidSz, BYTE ats[], BYTE maxAtsSz, BYTE* actAtsSz);
 LONG SSCP_ScanARaw(SSCP_CTX_ST* ctx, WORD *protocol, BYTE uid[], BYTE maxUidSz, BYTE* actUidSz, BYTE ats[], BYTE maxAtsSz, BYTE* actAtsSz);

@@ -18,6 +18,43 @@ void showStatistics(SSCP_CTX_ST* ctx)
 	}
 }
 
+static LONG showReaderInfos(SSCP_CTX_ST* ctx)
+{
+	LONG rc;
+	BYTE version;
+	BYTE baudrate;
+	BYTE address;
+	WORD voltage;
+	char serialNumber[64];
+	char readerType[64];
+
+	rc = SSCP_GetInfos(ctx, &version, &baudrate, &address, &voltage);
+	if (rc)
+	{
+		printf("SSCP_GetInfos failed (err. %d)\n", rc);
+		return rc;
+	}
+	printf("SSCP_GetInfos OK, version=%02X, baudrate=%02X, address=%02X, voltage=%04X\n", version, baudrate, address, voltage);
+
+	rc = SSCP_GetSerialNumber(ctx, serialNumber, sizeof(serialNumber));
+	if (rc)
+	{
+		printf("SSCP_GetSerialNumber failed (err. %d)\n", rc);
+		return rc;
+	}
+	printf("SSCP_GetSerialNumber OK, serialNumber=%s\n", serialNumber);
+
+	rc = SSCP_GetReaderType(ctx, readerType, sizeof(readerType));
+	if (rc)
+	{
+		printf("SSCP_GetReaderType failed (err. %d)\n", rc);
+		return rc;
+	}
+	printf("SSCP_GetReaderType OK, readerType=%s\n", readerType);
+
+	return 0;
+}
+
 int main(int argc, char** argv)
 {
 	SSCP_TOOL_PARAMS_ST params;
@@ -62,6 +99,59 @@ int main(int argc, char** argv)
 	}
 	printf("SSCP_Authenticate OK\n");
 
+	switch (params.command)
+	{
+		case SSCP_TOOL_COMMAND_INFO:
+			rc = showReaderInfos(ctx);
+			if (rc)
+				goto sscp_error;
+			goto sscp_success;
+
+		case SSCP_TOOL_COMMAND_OUTPUTS:
+			rc = SSCP_Outputs(ctx, params.outputLedColor, params.outputLedDuration, params.outputBuzzerDuration);
+			if (rc)
+			{
+				printf("SSCP_Outputs failed (err. %d)\n", rc);
+				goto sscp_error;
+			}
+			printf("SSCP_Outputs OK\n");
+			goto sscp_success;
+
+		case SSCP_TOOL_COMMAND_OUTPUTS_RGB:
+			rc = SSCP_OutputsRGB(ctx, params.outputRgbColor, params.outputLedDuration, params.outputBuzzerDuration);
+			if (rc)
+			{
+				printf("SSCP_OutputsRGB failed (err. %d)\n", rc);
+				goto sscp_error;
+			}
+			printf("SSCP_OutputsRGB OK\n");
+			goto sscp_success;
+
+		case SSCP_TOOL_COMMAND_SET_ADDRESS:
+			rc = SSCP_SetAddress(ctx, params.newReaderAddress);
+			if (rc)
+			{
+				printf("SSCP_SetAddress(0x%02X) failed (err. %d)\n", params.newReaderAddress, rc);
+				goto sscp_error;
+			}
+			printf("SSCP_SetAddress OK\n");
+			goto sscp_success;
+
+		case SSCP_TOOL_COMMAND_SET_KEY:
+			rc = SSCP_SetKey(ctx, params.newAuthKey);
+			if (rc)
+			{
+				printf("SSCP_SetKey failed (err. %d)\n", rc);
+				goto sscp_error;
+			}
+			printf("SSCP_SetKey OK\n");
+			goto sscp_success;
+
+		case SSCP_TOOL_COMMAND_POLL:
+		default:
+			break;
+	}
+
 	rc = SSCP_Outputs(ctx, 0x02, 0x0A, 0x02);
 	if (rc)
 	{
@@ -69,41 +159,9 @@ int main(int argc, char** argv)
 		goto sscp_error;
 	}
 
-	{
-		BYTE version;
-		BYTE baudrate;
-		BYTE address;
-		WORD voltage;
-		rc = SSCP_GetInfos(ctx, &version, &baudrate, &address, &voltage);
-		if (rc)
-		{
-			printf("SSCP_GetInfos failed (err. %d)\n", rc);
-			goto sscp_error;
-		}
-		printf("SSCP_GetInfos OK, version=%02X, baudrate=%02X, address=%02X, voltage=%04X\n", version, baudrate, address, voltage);
-	}
-
-	{
-		char serialNumber[64];
-		rc = SSCP_GetSerialNumber(ctx, serialNumber, sizeof(serialNumber));
-		if (rc)
-		{
-			printf("SSCP_GetSerialNumber failed (err. %d)\n", rc);
-			goto sscp_error;
-		}
-		printf("SSCP_GetSerialNumber OK, serialNumber=%s\n", serialNumber);
-	}
-
-	{
-		char readerType[64];
-		rc = SSCP_GetReaderType(ctx, readerType, sizeof(readerType));
-		if (rc)
-		{
-			printf("SSCP_GetReaderType failed (err. %d)\n", rc);
-			goto sscp_error;
-		}
-		printf("SSCP_GetReaderType OK, readerType=%s\n", readerType);
-	}
+	rc = showReaderInfos(ctx);
+	if (rc)
+		goto sscp_error;
 
 	for (;;)
 	{
@@ -226,6 +284,7 @@ int main(int argc, char** argv)
 		}
 	}
 
+sscp_success:
 	if (ctx != NULL)
 	{
 		SSCP_Close(ctx);
