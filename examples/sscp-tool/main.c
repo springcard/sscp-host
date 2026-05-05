@@ -138,13 +138,13 @@ int main(int argc, char** argv)
 			goto sscp_success;
 
 		case SSCP_TOOL_COMMAND_SET_KEY:
-			rc = SSCP_SetKey(ctx, params.newAuthKey);
+			rc = SSCP_ChangeKey(ctx, params.newAuthKey);
 			if (rc)
 			{
-				printf("SSCP_SetKey failed (err. %d)\n", rc);
+				printf("SSCP_ChangeKey failed (err. %d)\n", rc);
 				goto sscp_error;
 			}
-			printf("SSCP_SetKey OK\n");
+			printf("SSCP_ChangeKey OK\n");
 			goto sscp_success;
 
 		case SSCP_TOOL_COMMAND_POLL:

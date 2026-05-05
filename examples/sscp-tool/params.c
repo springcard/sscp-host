@@ -106,7 +106,8 @@ void SSCP_ToolShowUsage(const char* programName)
 	fprintf(stderr, "  -A address      Set the reader address and exit\n");
 	fprintf(stderr, "  -K new_key      Set the reader key and exit\n");
 	fprintf(stderr, "  -h              Show this help\n");
-	fprintf(stderr, "Output values accept decimal or 0x-prefixed hexadecimal input.\n");
+	fprintf(stderr, "Address, key, and RGB color values are hexadecimal; the 0x prefix is optional.\n");
+	fprintf(stderr, "Output duration values accept decimal or 0x-prefixed hexadecimal input.\n");
 }
 
 void SSCP_ToolInitParams(SSCP_TOOL_PARAMS_ST* params)
@@ -180,13 +181,18 @@ static const char* skipHexPrefix(const char* value)
 static int parseReaderAddress(const char* value, BYTE* out)
 {
 	char* end;
+	const char* hex;
 	unsigned long parsed;
 
 	if ((value == NULL) || (*value == '\0') || (out == NULL))
 		return -1;
 
+	hex = skipHexPrefix(value);
+	if (*hex == '\0')
+		return -1;
+
 	errno = 0;
-	parsed = strtoul(value, &end, 16);
+	parsed = strtoul(hex, &end, 16);
 	if ((errno != 0) || (*end != '\0') || (parsed > 0x7F))
 		return -1;
 
@@ -214,13 +220,18 @@ static int parseByteValue(const char* value, BYTE* out)
 static int parseRgbValue(const char* value, DWORD* out)
 {
 	char* end;
+	const char* hex;
 	unsigned long parsed;
 
 	if ((value == NULL) || (*value == '\0') || (out == NULL))
 		return -1;
 
+	hex = skipHexPrefix(value);
+	if (*hex == '\0')
+		return -1;
+
 	errno = 0;
-	parsed = strtoul(value, &end, 0);
+	parsed = strtoul(hex, &end, 16);
 	if ((errno != 0) || (*end != '\0') || (parsed > 0xFFFFFF))
 		return -1;
 
