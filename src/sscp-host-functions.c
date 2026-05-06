@@ -151,6 +151,9 @@ LONG SSCP_Authenticate(SSCP_CTX_ST* ctx, const BYTE authKeyValue[16])
 			return rc;
 	}
 
+	if (responseSz < 4 + 4 + 16 + 16 + 32)
+		return SSCP_ERR_WRONG_RESPONSE_LENGTH;
+
 	offset = 0;
 	memcpy(B, &response[offset], 4);
 	offset += 4;
@@ -237,6 +240,7 @@ LONG SSCP_Authenticate(SSCP_CTX_ST* ctx, const BYTE authKeyValue[16])
 	}
 
 	/* Expected response is an ACK */
+	// TODO: verify the content of the ACK (e.g. check if it contains a session ID or other info)
 
 	/* Compute session keys */
 	/* -------------------- */
@@ -918,8 +922,8 @@ LONG SSCP_TransceiveNFC(SSCP_CTX_ST* ctx, const BYTE commandApdu[], DWORD comman
 	if (commandApdu == NULL && commandApduSz > 0)
 		return SSCP_ERR_INVALID_PARAMETER;
 
-    /* Allocated the two buffers */
-    commandFull = calloc(commandApduSz, 1);
+    /* Allocate the two buffers */
+    commandFull = calloc(commandApduSz + 1, 1);
     if (commandFull == NULL)
         return SSCP_ERR_OUT_OF_MEMORY;
 	commandFull[0] = 0x00; /* Reserved */
@@ -949,6 +953,8 @@ LONG SSCP_TransceiveNFC(SSCP_CTX_ST* ctx, const BYTE commandApdu[], DWORD comman
 			if (actResponseApduSz != NULL)
 				*actResponseApduSz = responseDataSz - 1;
 			if (responseDataSz - 1 > maxResponseApduSz)
+				return SSCP_ERR_OUTPUT_BUFFER_OVERFLOW;
+			if (responseApdu == NULL)
 				return SSCP_ERR_OUTPUT_BUFFER_OVERFLOW;
 			memcpy(responseApdu, &responseData[1], responseDataSz - 1);
 		break;

@@ -95,7 +95,7 @@ LONG SSCP_ExchangeRaw(SSCP_CTX_ST* ctx, BYTE address, BYTE protocol, const BYTE 
 
     rc = SSCP_SerialRecv(ctx, header, sizeof(header));
     if (rc)
-        return rc;
+        return rc; /* Likely a timeout */
 
     if (header[0] != 0x02)
         return SSCP_ERR_WRONG_RESPONSE_COMMAND;
@@ -103,8 +103,25 @@ LONG SSCP_ExchangeRaw(SSCP_CTX_ST* ctx, BYTE address, BYTE protocol, const BYTE 
     length <<= 8;
     length |= header[2];
 
-    if (length > maxResponseSz) /* Payload will not fit */
-        return SSCP_ERR_RESPONSE_TOO_LONG;
+    if (header[3] != address)
+    {
+        /* Wrong address */
+        rc = SSCP_ERR_WRONG_RESPONSE_ADDRESS;
+        goto flush;
+    }
+    if (header[4] != protocol)
+    {
+        /* Wrong protocol */
+        rc = SSCP_ERR_WRONG_RESPONSE_PROTOCOL;
+        goto flush;
+    }
+
+    if (length > maxResponseSz)
+    {   
+        /* Payload will not fit */
+        rc = SSCP_ERR_RESPONSE_TOO_LONG;
+        goto flush;
+    }
 
     /* Set the timeouts */
     rc = SSCP_SerialSetTimeouts(ctx, SSCP_RESPONSE_NEXT_TIMEOUT, SSCP_RESPONSE_NEXT_TIMEOUT);
@@ -138,6 +155,20 @@ LONG SSCP_ExchangeRaw(SSCP_CTX_ST* ctx, BYTE address, BYTE protocol, const BYTE 
         *actResponseSz = length;
 
     return SSCP_SUCCESS;
+
+flush:
+    /* Flush the input buffer */
+    if (SSCP_SerialSetTimeouts(ctx, SSCP_RESPONSE_NEXT_TIMEOUT, SSCP_RESPONSE_NEXT_TIMEOUT) == SSCP_SUCCESS)
+    {
+        DWORD flush_length = length + sizeof(crcB);
+        BYTE flush_byte;
+
+        while ((flush_length-- > 0) && (SSCP_SerialRecv(ctx, &flush_byte, 1) == SSCP_SUCCESS))
+        {
+            /* Ignore received bytes */
+        }
+    }
+    return rc;
 }
 
 LONG SSCP_Exchange(SSCP_CTX_ST* ctx, DWORD commandHeader, const BYTE commandData[], DWORD commandDataSz, BYTE responseData[], DWORD maxResponseDataSz, DWORD* actResponseDataSz)
@@ -153,7 +184,8 @@ LONG SSCP_Exchange(SSCP_CTX_ST* ctx, DWORD commandHeader, const BYTE commandData
     DWORD responseSz = 0;
     BYTE *response = NULL;
     BYTE responseCode;
-    DWORD t, i;
+    BOOL counterOverflow = FALSE;
+    DWORD t, i;    
     LONG rc;
 
     if (ctx == NULL)
@@ -377,6 +409,14 @@ LONG SSCP_Exchange(SSCP_CTX_ST* ctx, DWORD commandHeader, const BYTE commandData
     {
         /* Counter has been incremented by the device */
         ctx->counter = t + 1;
+        /* Manage overflow */
+        if (ctx->counter < t)
+        {
+            /* Handle overflow case */
+            if (SSCP_DEBUG_EXCHANGE)
+                SSCP_Trace("Counter overflow, new authentication required\n");
+            counterOverflow = TRUE;
+        }
     }
     else
     {
@@ -501,6 +541,9 @@ LONG SSCP_Exchange(SSCP_CTX_ST* ctx, DWORD commandHeader, const BYTE commandData
             SSCP_Trace("Exchange returns error %02X\n", responseCode);
         return responseCode;
     }
+
+    if (counterOverflow)
+        return SSCP_ERR_COUNTER_OVERFLOW;
 
     return SSCP_SUCCESS;
 

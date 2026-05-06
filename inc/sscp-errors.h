@@ -48,6 +48,10 @@
 #define SSCP_ERR_WRONG_RESPONSE_TYPE -24 /* Protocol error: type in response footer does not match command */
 #define SSCP_ERR_WRONG_RESPONSE_COMMAND -25 /* Protocol error: command in response header does not match command */
 #define SSCP_ERR_WRONG_RESPONSE_FORMAT -26 /* Protocol error: length response header does not match size of response */
+#define SSCP_ERR_WRONG_RESPONSE_ADDRESS -27 /* Protocol error: address in response header does not match command */
+#define SSCP_ERR_WRONG_RESPONSE_PROTOCOL -28 /* Protocol error: protocol in response header does not match command */
+
+#define SSCP_ERR_COUNTER_OVERFLOW -29 /* Protocol error: counter has overflowed */
 
 #define SSCP_ERR_UNSUPPORTED_RESPONSE_STATUS -30 /* Application error: wrong response status byte */
 #define SSCP_ERR_UNSUPPORTED_RESPONSE_VALUE -31  /* Application error: wrong value in response */

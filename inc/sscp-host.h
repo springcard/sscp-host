@@ -32,8 +32,12 @@
 #include <windows.h>
 #else
 
-/* From PCSD Lite */
-#include <PCSC/wintypes.h>
+typedef uint8_t BYTE;
+typedef uint16_t WORD;
+typedef uint32_t DWORD;
+
+typedef long LONG;
+typedef bool BOOL;
 
 #ifndef TRUE
 #define TRUE true

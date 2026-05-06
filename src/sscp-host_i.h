@@ -14,7 +14,9 @@ struct _SSCP_CTX_ST
 	DWORD interByteTimeout;
 #endif
 	BYTE address;
+
 	DWORD counter;
+
 	BYTE sessionKeyCipherAB[16];
 	BYTE sessionKeyCipherBA[16];
 	BYTE sessionKeySignAB[16];

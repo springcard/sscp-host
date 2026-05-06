@@ -66,7 +66,7 @@ LONG SSCP_SerialConfigure(SSCP_CTX_ST* ctx, DWORD baudrate)
 	if (ctx->commFd < 0)
 		return SSCP_ERR_COMM_NOT_OPEN;
 
-	bzero(&newtio, sizeof(newtio));
+	memset(&newtio, 0, sizeof(newtio));
 	// CS8  = 8n1 (8bit,no parity,1 stopbit
 	// CLOCAL= local connection, no modem control
 	// CREAD  = enable receiving characters
@@ -200,13 +200,13 @@ LONG SSCP_SerialRecv(SSCP_CTX_ST* ctx, BYTE buffer[], DWORD length)
 
         if (received == 0)
 		{
-            timeout.tv_sec = 1;
-            timeout.tv_usec = 500000; // 1500ms
+            timeout.tv_sec = ctx->firstByteTimeout / 1000;
+            timeout.tv_usec = (ctx->firstByteTimeout % 1000) * 1000;
         }
 		else
 		{
-            timeout.tv_sec = 0;
-            timeout.tv_usec = 50000; // 50ms
+            timeout.tv_sec = ctx->interByteTimeout / 1000;
+            timeout.tv_usec = (ctx->interByteTimeout % 1000) * 1000;
         }
 
         int sel = select(ctx->commFd + 1, &read_fds, NULL, NULL, &timeout);
