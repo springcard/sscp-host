@@ -32,12 +32,16 @@
 #include <windows.h>
 #else
 
+#ifndef WIN32_TYPES_DEFINED
+
 typedef uint8_t BYTE;
 typedef uint16_t WORD;
 typedef uint32_t DWORD;
 
 typedef long LONG;
 typedef bool BOOL;
+
+#endif
 
 #ifndef TRUE
 #define TRUE true
