@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 project(sscp-host C)
 
 option(SSCP_WITH_OPENSSL "Enable OpenSSL support if available" ON)
+option(SSCP_GENERATE_MSVC_MAKEFILE "Generate a make wrapper when using a Visual Studio generator" ON)
 
 set(CMAKE_C_STANDARD 99)
 set(LIBRARY_NAME sscp-host)
@@ -36,3 +37,13 @@ add_executable(sscp-tool
     examples/sscp-tool/project.h
 )
 target_link_libraries(sscp-tool ${LIBRARY_NAME} ${OPENSSL_LIB})
+
+# Visual Studio generators are multi-config and do not emit a Makefile.
+# This optional wrapper lets users run `make` from the MSVC build directory.
+if(SSCP_GENERATE_MSVC_MAKEFILE AND CMAKE_GENERATOR MATCHES "Visual Studio")
+    configure_file(
+        "${PROJECT_SOURCE_DIR}/cmake/Makefile.msvc.in"
+        "${PROJECT_BINARY_DIR}/Makefile"
+        @ONLY
+    )
+endif()

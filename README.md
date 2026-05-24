@@ -41,6 +41,16 @@ cmake .. -G "Visual Studio 17 2022"
 cmake --build . --config Release
 ```
 
+The Visual Studio generator also creates a GNU make wrapper in the build
+directory. If `make` is available in your shell, you may build the two example
+executables without opening Visual Studio:
+
+```bash
+make
+make CONFIG=Debug
+make sscp-tool CONFIG=Release
+```
+
 Alternatively, you can include the source files in your own project.
 
 ## Documentation
