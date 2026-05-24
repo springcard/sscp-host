@@ -12,15 +12,27 @@ card, and sends a sample APDU when a card is present.
 Usage:
 
 ```bash
-sscp-test
+sscp-test [connection options]
 ```
 
-The connection parameters are hard-coded:
+Connection options:
 
-- Serial port: `COM8` on Windows, `/dev/ttyUSB0` on other platforms
-- Bitrate: `38400`
-- Reader address: `0x01`
-- Authentication key: default library key
+```text
+-p serial_port  Serial port name (default: COM8 on Windows, /dev/ttyUSB0 otherwise)
+-b bitrate      Connection bitrate: 9600, 38400, or 115200 (default: 38400)
+-a address      Reader address in hexadecimal, from 0x00 to 0x7F (default: 0x01)
+-h              Show command-line help
+```
+
+Address values are hexadecimal; the `0x` prefix is optional. The authentication
+key is the default library key.
+
+Examples:
+
+```bash
+sscp-test -p COM8
+sscp-test -p /dev/ttyUSB0 -b 115200 -a 01
+```
 
 Use this example as a compact integration test or as source code showing the
 basic SSCP call sequence.
