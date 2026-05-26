@@ -65,13 +65,16 @@ Commands:
 -U c d b        Call SSCP_Outputs(c, d, b) and exit
 -R rgb d b      Call SSCP_OutputsRGB(rgb, d, b) and exit
 -A address      Set the reader address and exit
+-B bitrate      Set the reader bitrate: 9600, 19200, 38400, 57600, or 115200 and exit
 -K new_key      Set the reader key and exit
 -h              Show command-line help
 ```
 
 Only one command option may be specified at a time. Address, key, and RGB color
 values are hexadecimal; the `0x` prefix is optional. Output duration values
-accept decimal or `0x`-prefixed hexadecimal input.
+accept decimal or `0x`-prefixed hexadecimal input. The `-B` command connects to
+the reader with the bitrate specified by `-b`, then asks the reader to switch to
+the new bitrate.
 
 Examples:
 
@@ -79,5 +82,6 @@ Examples:
 sscp-tool -p COM8 -I
 sscp-tool -p COM8 -R 2244FF 255 0
 sscp-tool -p /dev/ttyUSB0 -b 115200 -a 01
+sscp-tool -p COM8 -b 38400 -B 115200
 sscp-tool -k 00112233445566778899AABBCCDDEEFF -A 02
 ```

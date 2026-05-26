@@ -19,6 +19,7 @@ typedef enum
 	SSCP_TOOL_COMMAND_OUTPUTS,
 	SSCP_TOOL_COMMAND_OUTPUTS_RGB,
 	SSCP_TOOL_COMMAND_SET_ADDRESS,
+	SSCP_TOOL_COMMAND_SET_BITRATE,
 	SSCP_TOOL_COMMAND_SET_KEY
 } SSCP_TOOL_COMMAND_EN;
 
@@ -41,6 +42,7 @@ typedef struct
 	BYTE outputBuzzerDuration;
 	DWORD outputRgbColor;
 	BYTE newReaderAddress;
+	DWORD newReaderBitrate;
 	BYTE newAuthKey[16];
 } SSCP_TOOL_PARAMS_ST;
 

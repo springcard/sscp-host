@@ -104,10 +104,12 @@ void SSCP_ToolShowUsage(const char* programName)
 	fprintf(stderr, "  -U c d b        Call SSCP_Outputs(c, d, b) and exit\n");
 	fprintf(stderr, "  -R rgb d b      Call SSCP_OutputsRGB(rgb, d, b) and exit\n");
 	fprintf(stderr, "  -A address      Set the reader address and exit\n");
+	fprintf(stderr, "  -B bitrate      Set the reader bitrate: 9600, 19200, 38400, 57600, or 115200 and exit\n");
 	fprintf(stderr, "  -K new_key      Set the reader key and exit\n");
 	fprintf(stderr, "  -h              Show this help\n");
 	fprintf(stderr, "Address, key, and RGB color values are hexadecimal; the 0x prefix is optional.\n");
 	fprintf(stderr, "Output duration values accept decimal or 0x-prefixed hexadecimal input.\n");
+	fprintf(stderr, "The -B command connects with -b, then changes the reader bitrate.\n");
 }
 
 void SSCP_ToolInitParams(SSCP_TOOL_PARAMS_ST* params)
@@ -130,6 +132,7 @@ void SSCP_ToolInitParams(SSCP_TOOL_PARAMS_ST* params)
 	params->outputBuzzerDuration = 0;
 	params->outputRgbColor = 0;
 	params->newReaderAddress = 0;
+	params->newReaderBitrate = 0;
 	memset(params->newAuthKey, 0, sizeof(params->newAuthKey));
 }
 
@@ -150,6 +153,34 @@ static int parseBitrate(const char* value, DWORD* bitrate)
 	{
 		case 9600:
 		case 38400:
+		case 115200:
+			*bitrate = (DWORD) parsed;
+			return 0;
+
+		default:
+			return -1;
+	}
+}
+
+static int parseReaderBitrate(const char* value, DWORD* bitrate)
+{
+	char* end;
+	unsigned long parsed;
+
+	if ((value == NULL) || (*value == '\0') || (bitrate == NULL))
+		return -1;
+
+	errno = 0;
+	parsed = strtoul(value, &end, 10);
+	if ((errno != 0) || (*end != '\0'))
+		return -1;
+
+	switch (parsed)
+	{
+		case 9600:
+		case 19200:
+		case 38400:
+		case 57600:
 		case 115200:
 			*bitrate = (DWORD) parsed;
 			return 0;
@@ -292,7 +323,7 @@ int SSCP_ToolParseParams(int argc, char** argv, SSCP_TOOL_PARAMS_ST* params)
 	optarg = NULL;
 	optopt = 0;
 
-	while ((opt = getopt(argc, argv, "+p:b:a:k:IURA:K:h")) != -1)
+	while ((opt = getopt(argc, argv, "+p:b:a:k:IURB:A:K:h")) != -1)
 	{
 		switch (opt)
 		{
@@ -410,6 +441,17 @@ int SSCP_ToolParseParams(int argc, char** argv, SSCP_TOOL_PARAMS_ST* params)
 				}
 				break;
 
+			case 'B':
+				if (setCommand(params, SSCP_TOOL_COMMAND_SET_BITRATE, argv[0]) != SSCP_TOOL_PARSE_OK)
+					return SSCP_TOOL_PARSE_ERROR;
+				if (parseReaderBitrate(optarg, &params->newReaderBitrate) != 0)
+				{
+					fprintf(stderr, "Invalid new reader bitrate '%s'\n", optarg);
+					SSCP_ToolShowUsage(argv[0]);
+					return SSCP_TOOL_PARSE_ERROR;
+				}
+				break;
+
 			case 'K':
 				if (setCommand(params, SSCP_TOOL_COMMAND_SET_KEY, argv[0]) != SSCP_TOOL_PARSE_OK)
 					return SSCP_TOOL_PARSE_ERROR;
@@ -427,7 +469,7 @@ int SSCP_ToolParseParams(int argc, char** argv, SSCP_TOOL_PARAMS_ST* params)
 
 			case '?':
 			default:
-				if ((optopt == 'p') || (optopt == 'b') || (optopt == 'a') || (optopt == 'k') || (optopt == 'A') || (optopt == 'K'))
+				if ((optopt == 'p') || (optopt == 'b') || (optopt == 'a') || (optopt == 'k') || (optopt == 'A') || (optopt == 'B') || (optopt == 'K'))
 					fprintf(stderr, "Option '-%c' requires an argument\n", optopt);
 				else
 					fprintf(stderr, "Unknown option '-%c'\n", optopt);

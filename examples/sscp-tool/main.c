@@ -80,7 +80,7 @@ int main(int argc, char** argv)
 	rc = SSCP_Open(ctx, params.serialPortName, params.serialBitrate, 0);
 	if (rc)
 	{
-		printf("SSCP_Open failed (err. %d)\n", rc);
+		printf("SSCP_Open(%s, %d) failed (err. %d)\n", params.serialPortName, params.serialBitrate, rc);
 		goto sscp_error;
 	}
 
@@ -135,6 +135,16 @@ int main(int argc, char** argv)
 				goto sscp_error;
 			}
 			printf("SSCP_SetAddress OK\n");
+			goto sscp_success;
+
+		case SSCP_TOOL_COMMAND_SET_BITRATE:
+			rc = SSCP_SetBaudrate(ctx, params.newReaderBitrate);
+			if (rc)
+			{
+				printf("SSCP_SetBaudrate(%d) failed (err. %d)\n", params.newReaderBitrate, rc);
+				goto sscp_error;
+			}
+			printf("SSCP_SetBaudrate OK\n");
 			goto sscp_success;
 
 		case SSCP_TOOL_COMMAND_SET_KEY:
