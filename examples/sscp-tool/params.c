@@ -99,6 +99,7 @@ void SSCP_ToolShowUsage(const char* programName)
 	fprintf(stderr, "  -b bitrate      Connection bitrate: 9600, 38400, or 115200 (default: 38400)\n");
 	fprintf(stderr, "  -a address      Reader address in hexadecimal, from 0x00 to 0x7F (default: 0x01)\n");
 	fprintf(stderr, "  -k auth_key     Authentication key as 16 hexadecimal bytes, optionally prefixed with 0x\n");
+	fprintf(stderr, "  -v, --verbose   Enable serial, exchange, and authentication debug traces\n");
 	fprintf(stderr, "Commands:\n");
 	fprintf(stderr, "  -I              Print reader information and exit\n");
 	fprintf(stderr, "  -U c d b        Call SSCP_Outputs(c, d, b) and exit\n");
@@ -126,6 +127,7 @@ void SSCP_ToolInitParams(SSCP_TOOL_PARAMS_ST* params)
 	params->readerAddress = 0x01;
 	memset(params->authKey, 0, sizeof(params->authKey));
 	params->hasAuthKey = FALSE;
+	params->verbose = FALSE;
 	params->command = SSCP_TOOL_COMMAND_POLL;
 	params->outputLedColor = 0;
 	params->outputLedDuration = 0;
@@ -323,8 +325,19 @@ int SSCP_ToolParseParams(int argc, char** argv, SSCP_TOOL_PARAMS_ST* params)
 	optarg = NULL;
 	optopt = 0;
 
-	while ((opt = getopt(argc, argv, "+p:b:a:k:IURB:A:K:h")) != -1)
+	for (;;)
 	{
+		if ((optind < argc) && (strcmp(argv[optind], "--verbose") == 0))
+		{
+			params->verbose = TRUE;
+			optind++;
+			continue;
+		}
+
+		opt = getopt(argc, argv, "+p:b:a:k:vIURB:A:K:h");
+		if (opt == -1)
+			break;
+
 		switch (opt)
 		{
 			case 'p':
@@ -363,6 +376,10 @@ int SSCP_ToolParseParams(int argc, char** argv, SSCP_TOOL_PARAMS_ST* params)
 					return SSCP_TOOL_PARSE_ERROR;
 				}
 				params->hasAuthKey = TRUE;
+				break;
+
+			case 'v':
+				params->verbose = TRUE;
 				break;
 
 			case 'I':

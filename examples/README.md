@@ -21,6 +21,7 @@ Connection options:
 -p serial_port  Serial port name (default: COM8 on Windows, /dev/ttyUSB0 otherwise)
 -b bitrate      Connection bitrate: 9600, 38400, or 115200 (default: 38400)
 -a address      Reader address in hexadecimal, from 0x00 to 0x7F (default: 0x01)
+-v, --verbose   Enable serial, exchange, and authentication debug traces
 -h              Show command-line help
 ```
 
@@ -56,6 +57,7 @@ Connection options:
 -b bitrate      Connection bitrate: 9600, 38400, or 115200 (default: 38400)
 -a address      Reader address in hexadecimal, from 0x00 to 0x7F (default: 0x01)
 -k auth_key     Authentication key as 16 hexadecimal bytes, optionally prefixed with 0x
+-v, --verbose   Enable serial, exchange, and authentication debug traces
 ```
 
 Commands:

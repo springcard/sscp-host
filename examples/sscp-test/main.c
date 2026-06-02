@@ -10,6 +10,7 @@
 #include <sscp-host.h>
 
 extern BOOL SSCP_SELFTEST;
+extern BOOL SSCP_DEBUG_SERIAL;
 extern BOOL SSCP_DEBUG_EXCHANGE;
 extern BOOL SSCP_DEBUG_AUTHENTICATE;
 
@@ -18,6 +19,7 @@ typedef struct
 	const char* serialPortName;
 	DWORD serialBitrate;
 	BYTE readerAddress;
+	BOOL verbose;
 } SSCP_TEST_PARAMS_ST;
 
 #ifdef _WIN32
@@ -96,6 +98,7 @@ static void showUsage(const char* programName)
 	fprintf(stderr, "  -p serial_port  Serial port name (default: COM8 on Windows, /dev/ttyUSB0 otherwise)\n");
 	fprintf(stderr, "  -b bitrate      Connection bitrate: 9600, 38400, or 115200 (default: 38400)\n");
 	fprintf(stderr, "  -a address      Reader address in hexadecimal, from 0x00 to 0x7F (default: 0x01)\n");
+	fprintf(stderr, "  -v, --verbose   Enable serial, exchange, and authentication debug traces\n");
 	fprintf(stderr, "  -h              Show this help\n");
 	fprintf(stderr, "Address values are hexadecimal; the 0x prefix is optional.\n");
 }
@@ -109,6 +112,7 @@ static void initParams(SSCP_TEST_PARAMS_ST* params)
 #endif
 	params->serialBitrate = 38400;
 	params->readerAddress = 0x01;
+	params->verbose = FALSE;
 }
 
 static const char* skipHexPrefix(const char* value)
@@ -176,8 +180,19 @@ static int parseParams(int argc, char** argv, SSCP_TEST_PARAMS_ST* params)
 	optarg = NULL;
 	optopt = 0;
 
-	while ((opt = getopt(argc, argv, "+p:b:a:h")) != -1)
+	for (;;)
 	{
+		if ((optind < argc) && (strcmp(argv[optind], "--verbose") == 0))
+		{
+			params->verbose = TRUE;
+			optind++;
+			continue;
+		}
+
+		opt = getopt(argc, argv, "+p:b:a:vh");
+		if (opt == -1)
+			break;
+
 		switch (opt)
 		{
 			case 'p':
@@ -206,6 +221,10 @@ static int parseParams(int argc, char** argv, SSCP_TEST_PARAMS_ST* params)
 					showUsage(argv[0]);
 					return -1;
 				}
+				break;
+
+			case 'v':
+				params->verbose = TRUE;
 				break;
 
 			case 'h':
@@ -263,8 +282,12 @@ int main(int argc, char** argv)
 		return (parseRc > 0) ? 0 : -1;
 
 	SSCP_SELFTEST = TRUE;	
-	SSCP_DEBUG_EXCHANGE = TRUE;
-	SSCP_DEBUG_AUTHENTICATE = TRUE;
+	if (params.verbose)
+	{
+		SSCP_DEBUG_SERIAL = TRUE;
+		SSCP_DEBUG_EXCHANGE = TRUE;
+		SSCP_DEBUG_AUTHENTICATE = TRUE;
+	}
 
 	ctx = SSCP_Alloc();
 	if (ctx == NULL)

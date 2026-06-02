@@ -2,6 +2,10 @@
 
 #include "project.h"
 
+extern BOOL SSCP_DEBUG_SERIAL;
+extern BOOL SSCP_DEBUG_EXCHANGE;
+extern BOOL SSCP_DEBUG_AUTHENTICATE;
+
 void showStatistics(SSCP_CTX_ST* ctx)
 {
 	SSCP_STATISTICS_ST stats;
@@ -69,6 +73,13 @@ int main(int argc, char** argv)
 		return 0;
 	if (parseRc != SSCP_TOOL_PARSE_OK)
 		return -1;
+
+	if (params.verbose)
+	{
+		SSCP_DEBUG_SERIAL = TRUE;
+		SSCP_DEBUG_EXCHANGE = TRUE;
+		SSCP_DEBUG_AUTHENTICATE = TRUE;
+	}
 
 	ctx = SSCP_Alloc();
 	if (ctx == NULL)

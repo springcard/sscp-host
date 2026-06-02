@@ -36,6 +36,7 @@ typedef struct
 	BYTE readerAddress;
 	BYTE authKey[16];
 	BOOL hasAuthKey;
+	BOOL verbose;
 	SSCP_TOOL_COMMAND_EN command;
 	BYTE outputLedColor;
 	BYTE outputLedDuration;
